@@ -6,7 +6,7 @@
           {{ range .Site.Data.beautifulhugo.social.social_icons }}
             {{- if isset $.Site.Author .id }}
               <li>
-                <a href="{{ printf .url (index $.Site.Author .id) }}" title="{{ .title }}">
+                <a href="{{ printf .url (index $.Site.Author .id) }}" title="{{ .title }}" target="_blank">
                   <span class="fa-stack fa-lg">
                     <i class="fa fa-circle fa-stack-2x"></i>
                     <i class="fa {{ .icon }} fa-stack-1x fa-inverse"></i>
@@ -49,8 +49,10 @@
         </p>
         <!-- Please don't remove this, keep my open source work credited :) -->
         <p class="credits theme-by text-muted">
-          {{ i18n "poweredBy" . | safeHTML }}
-          {{ with .Site.Params.commit }}&nbsp;&bull;&nbsp;[<a href="{{.}}{{ getenv "GIT_COMMIT_SHA" }}">{{ getenv "GIT_COMMIT_SHA_SHORT" }}</a>]{{ end }}
+          <a href="http://gohugo.io/" target="_blank"><img src="/img/hugo.svg" /></a>&nbsp;+&nbsp;<a href="http://pages.github.com/" target="_blank"><img src="/img/github.svg" /></a> Powered by <a href="http://gohugo.io/" target="_blank">Hugo</a> &amp; <a href="http://pages.github.com/" target="_blank">GitHub Pages</a>
+          &nbsp;&bull;&nbsp; Theme adapted from <a href="https://github.com/halogenica/beautifulhugo" target="_blank">Beautiful Hugo</a>          
+        </p>
+      </div>
         </p>
       </div>
     </div>

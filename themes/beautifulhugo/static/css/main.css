@@ -684,3 +684,9 @@ input.gsc-input, .gsc-input-box, .gsc-input-box-hover, .gsc-input-box-focus, .gs
   box-sizing: content-box;
   line-height: normal;
 }
+
+p.credits.theme-by > a > img {
+  height: 14px;
+  float: none;
+  display: inline;
+}
