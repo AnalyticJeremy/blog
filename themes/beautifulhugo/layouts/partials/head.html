@@ -17,6 +17,7 @@
 {{- with .Site.Params.favicon }}
   <link href='{{ . | absURL }}' rel='icon' type='image/x-icon'/>
 {{- end -}}
+  <link rel="shortcut icon" href="/img/favicon.png"/>
 <!-- Social Media Tags -->
 {{- with .Params.share_img | default .Params.image | default .Site.Params.logo }}
   <meta property="og:image" content="{{ . | absURL }}" />

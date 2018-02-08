@@ -6,8 +6,8 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="{{ "" | absLangURL }}">{{ .Site.Title }}</a>
+      </button>      
+      <a class="navbar-brand" href="{{ "" | absLangURL }}"><img class="navbar-logo" src="{{ .Site.Params.logo | absURL }}" alt="{{ .Site.Title }}" /> {{ .Site.Title }}</a>
     </div>
 
     <div class="collapse navbar-collapse" id="main-navbar">

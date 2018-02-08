@@ -16,7 +16,7 @@ publishDir = "../analyticjeremy.github.io"
 
 [Params]
   subtitle = "a data science site by Jeremy Peach"
-  logo = "img/avatar-icon.png"
+  logo = "img/logo.svg"
   favicon = "img/favicon.ico"
   dateFormat = "January 2, 2006"
   commit = false
