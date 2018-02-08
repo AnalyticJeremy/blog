@@ -1,0 +1,180 @@
+---
+title: Predicting Peng's Podcasts - Part 1
+author: Jeremy Peach
+date: '2017-03-07'
+slug: 2017-03-07-predicting-peng-1
+excerpt: "forecasting Roger Peng's podcasting output"
+categories:
+  - articles
+tags:
+  - R
+  - forecasting
+  - Predicting Peng
+comments: false
+share: true
+css: "h1.entry-title {font-size: 4.1rem;}"
+image:
+  twitter: 2017-03-07-predicting-peng-1-plot-1.png
+---
+
+  <link rel="stylesheet" href="h1.entry-title {font-size: 4.1rem;}" type="text/css" />
+
+
+<p>Data science hero <a href="http://www.biostat.jhsph.edu/~rpeng/">Roger Peng</a> is the co-host of two different podcasts. For his first podcast, he joined <a href="https://hilaryparker.com/about-hilary-parker/">Hilary Parker</a> on a data science podcast called “<a href="http://www.nssdeviations.com/">Not So Standard Deviations</a>”. Their first episode was released on September 16, 2015, and since then they have released a total of 33 episodes. That works out to a rate of 0.061 episodes per day.</p>
+<p>But “Not So Standard Deviations” is not Dr. Peng’s only venture in the podcasting world. He has also teamed up with <a href="http://www.jhsph.edu/faculty/directory/profile/1876/elizabeth-c-matsui">Elizabeth Matsui</a> to create “<a href="http://effortreport.libsyn.com/">The Effort Report</a>,” a podcast covering life in academia. The first episode debuted on July 1, 2016. Matsui and Peng have produced 29 episodes, which sets a pace of 0.115 episodes per day.</p>
+<p>Even though “NSSD” had a 9 month headstart, “The Effort Report” has been releasing episodes at a much faster rate. We can expect that the number of episodes for “The Effort Report” will someday surpass that of “NSSD.” But when can we expect this momentous historic event to occur? Just for fun, we’ll devote a couple of blog posts to using some basic data science techniques to predict an answer to this burning question.</p>
+<section id="getting-some-data" class="level2">
+<h2>Getting Some Data</h2>
+<p>To make a prediction, we’ll need some data to tell us when the podcast episodes have been released. Fortunately, this is easy to obtain from the podcasts’ RSS feeds. We can use R to download and process this data; we just need to make a quick function to download the feeds, parse the XML, and store it in a <code>data.frame</code>. Below is a function I wrote called <code>rss.to.dataframe</code> to do the job:</p>
+<pre class="r"><code>library(XML);
+library(dplyr);
+
+# a simple function for converting a list of lists to a data.frame
+list.entry.to.dataframe &lt;- function(x) {
+  data.frame(as.list(x), stringsAsFactors = FALSE)
+}
+
+rss.to.dataframe &lt;- function(url) {
+  # download the RSS data as XML and use XPath to extract &quot;item&quot; elements
+  xmlDocument &lt;- xmlParse(url, encoding = &quot;UTF-8&quot;);
+  rootNode &lt;- xmlRoot(xmlDocument);
+  items &lt;- xpathApply(rootNode, &quot;//item&quot;);
+  data &lt;- lapply(items, xmlSApply, xmlValue);
+  
+  # convert the XML list to a data.frame
+  df &lt;- do.call(dplyr::bind_rows, lapply(data, list.entry.to.dataframe));
+
+  # if the data includes a &quot;pubDate&quot; column, convert that to a date
+  # and sort the output by that column
+  if (any(names(df) == &quot;pubDate&quot;) == TRUE) {
+    df$pubDate &lt;- as.POSIXct(df$pubDate, format = &quot;%a, %d %b %Y %T %z&quot;);
+    df &lt;- df[order(df$pubDate), ];
+  }
+  
+  # if there is a &quot;duration&quot; column, convert that to a difftime
+  if (any(names(df) == &quot;duration&quot;) == TRUE) {
+    df$duration &lt;- as.difftime(df$duration, format = &quot;%T&quot;);
+  }
+
+  # add a column &quot;n&quot; that increments for each row
+  df &lt;- cbind(n = 1:nrow(df), df)
+  
+  podcast &lt;- xpathApply(rootNode, &quot;channel/title&quot;, xmlValue);
+  df$podcast &lt;- podcast[[1]];
+  
+  return(df);
+}
+
+nssd &lt;- rss.to.dataframe(&quot;http://feeds.soundcloud.com/users/soundcloud:users:174789515/sounds.rss&quot;);
+effrep &lt;- rss.to.dataframe(&quot;http://effortreport.libsyn.com/rss&quot;);</code></pre>
+<p>We need to do just a little bit of cleaning on the data. The first item in NSSD’s RSS feed was a sort of teaser for the podcast and is not considered to be an official episode. So I’ll remove it from the <code>data.frame</code> and re-number the remaining rows so our episode counts will be correct.</p>
+<pre class="r"><code># Data Cleaning
+# remove the first row from NSSD because it&#39;s not really counted as an episode
+nssd &lt;- nssd[nssd$title != &quot;Naming The Podcast&quot;, ];
+nssd$n &lt;- nssd$n - 1;
+
+# For reproducibility in the future, make sure we remove any entries after the date this post was published
+as.of.date &lt;- as.POSIXct(&quot;2017-03-07 12:00:00&quot;);
+nssd &lt;- nssd[nssd$pubDate &lt; as.of.date, ];
+effrep &lt;- effrep[effrep$pubDate &lt; as.of.date, ];</code></pre>
+<p>Great! Now we have two <code>data.frame</code> objects, one for each podcast. To make our analysis easier, we can combine the two into one. We can also take this as an opportunity to cut out some extraneous columns.</p>
+<pre class="r"><code># select the columns we need and then union together the two data frames
+columns &lt;- c(&quot;podcast&quot;, &quot;n&quot;, &quot;pubDate&quot;, &quot;duration&quot;);
+episodes &lt;- rbind(nssd[, columns], effrep[ , columns]);
+
+# add a column so we can identify the rows that were actually observed
+# (as opposed to the forecast values we will soon be adding)
+episodes$type &lt;- &quot;actual&quot;;</code></pre>
+</section>
+<section id="making-a-very-basic-forecast" class="level2">
+<h2>Making a (Very Basic) Forecast</h2>
+<p>When conducting a data analysis, I like to take a “start simple” approach. This allows me to quickly study the data and produce some rough results before investing time in a more complex approach. Here I’ll implement that strategy by making a very basic assumption that both podcasts will continue releasing episodes at the same rate. Using this very simple model, we can predict the days on which upcoming episodes will be released.</p>
+<p>First, let’s compute the rate at which the podcasts have been released.</p>
+<pre class="r"><code># Determine the rate at which podcast episodes are being released
+# first, make a simple data frame with the first and last episode of each podcast
+first.last &lt;- episodes %&gt;%
+                group_by(podcast) %&gt;%
+                summarize(first = min(pubDate), last = max(pubDate), count = max(n)) %&gt;%
+                arrange(first);
+first.last &lt;- data.frame(first.last);
+
+# Compute how many days each podcast has been around and then compute a &quot;days per episode&quot; rate
+first.last$days &lt;- with(first.last, as.numeric(last - first));
+first.last$rate &lt;- with(first.last, days / (count - 1));</code></pre>
+<p>Now let’s extend that trend! I’ll pick an arbitrary future episode of the podcasts… let’s say Episode #45.<br />
+Assuming that Dr. Peng produced podcast episodes at a steady rate, on what date should each of the 45 episodes theoretically have been released?</p>
+<pre class="r"><code># using each podcast&#39;s episode release rate, construct a data set with
+# the expected release date of the first 45 episodes
+projected &lt;- merge(first.last, 1:45, all = TRUE);
+projected$pubDate &lt;- with(projected, first + ((y - 1) * rate * 24 * 60 * 60));
+projected$n &lt;- projected$y;
+projected$type &lt;- &quot;trend&quot;;
+projected$duration &lt;- NA;</code></pre>
+<p>We now have a data frame called <code>projected</code> that has the thoretical release dates for 45 episodes of each podcast assuming that production had proceeded at a constant rate.</p>
+</section>
+<section id="answering-the-big-question" class="level2">
+<h2>Answering the Big Question</h2>
+<p>Now that we have a simple forecast of release dates for future episodes, we can look at those projected release dates to see when “The Effort Report” will surpass “Not So Standard Deviations”. Here’s what we find:</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Episode Number</th>
+<th style="text-align: center;">Not So Standard Deviations</th>
+<th style="text-align: center;">The Effort Report</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">38</td>
+<td style="text-align: center;">2017-05-16</td>
+<td style="text-align: center;">2017-05-19</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">39</td>
+<td style="text-align: center;">2017-06-02</td>
+<td style="text-align: center;">2017-05-28</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">40</td>
+<td style="text-align: center;">2017-06-18</td>
+<td style="text-align: center;">2017-06-06</td>
+</tr>
+</tbody>
+</table>
+<p>According to our simple linear forecast, episode #39 of “The Effort Report” will be released on May 28, 2017. That is 5 days before “Not So Standard Deviations” will release its 39th episode. Thus we will consider this to be the “cross-over” point.</p>
+<blockquote>
+<p>Output from “The Effort Report” will surpass “Not So Standard Deviations” on May 28, 2017.</p>
+</blockquote>
+</section>
+<section id="visualizing-the-forecast" class="level2">
+<h2>Visualizing the Forecast</h2>
+<p>As usual, the easiest way to quickly understand the podcast output and our predicted release rate is to plot it out. This sounds like a job for <code>ggplot2</code>!</p>
+<p>Remember that we have two data frames, one with the actual episodes and one with our expected release dates based on our linear forecast. To make our plot easier, we’ll combine those two data frames into one. We can also convert our strings to factors.</p>
+<pre class="r"><code># combine our projected episode data with the actual episode data
+episodes &lt;- rbind(episodes, projected[ , names(episodes)])
+
+# change data types to be better suited for plotting
+episodes$podcast &lt;- factor(episodes$podcast)
+episodes$type &lt;- factor(episodes$type)
+episodes$pubDate &lt;- as.Date(episodes$pubDate)
+
+# We want to annotate our plot so make a nice label for that
+label.text &lt;- paste(&quot;Episode&quot;, cross.points[cross.index, &quot;Episode Number&quot;], &quot; - &quot;, format(cross.points[cross.index, 3], &quot;%B %e, %Y&quot;));
+
+library(ggplot2);
+ggplot() +
+  geom_line(data = episodes, aes(x = as.Date(pubDate), y = n, color = podcast, linetype = type, size = type)) +
+  scale_size_manual(values = c(1.2, 0.5)) +
+  scale_x_date(date_labels = &quot;%b %Y&quot;) +
+  labs(x = &quot;&quot;, y = &quot;Number of Episodes Released&quot;, title = &quot;Podcast Output Forecast (using simple linear method)&quot;) +
+  geom_point(data = data.frame(x = cross.points[cross.index, 3], y = cross.points[cross.index, &quot;Episode Number&quot;]), aes(x = x, y = y), size=2, color=&quot;#00BFC4&quot;) +
+  annotate(&quot;text&quot;, x = as.Date(&quot;2017-02-25&quot;), y = 43, hjust = 1, label = label.text, color=&quot;#00BFC4&quot;) +
+  annotate(&quot;segment&quot;, x = as.Date(&quot;2017-03-01&quot;), xend = cross.points[cross.index, 3] - 9, y = 42.75, yend = cross.points[cross.index, &quot;Episode Number&quot;] + 0.25, color = &quot;#00BFC4&quot;)</code></pre>
+<p><img src="/post/2017-03-07-predicting-peng-s-podcasts-part-1_files/figure-html/plot-1.png" width="960" /></p>
+<p>This plot allows us to easily see that the episodes have been released at a consistent rate, and it shows us when we can expect the two trendlines to converge.</p>
+</section>
+<section id="conclusion" class="level2">
+<h2>Conclusion</h2>
+<p>The plot reveals that overall Dr. Peng has been fairly consistent with his release schedule. This gives us hope that our simple linear forecast could actually be accurate. Check back next week; I’ll be using the <code>forecast</code> package on this same data set to try to make a more advanced forecast.</p>
+<p>And keep your eye on those podcast RSS feeds. We’ll soon find out how accurate my forecasts really are!</p>
+</section>

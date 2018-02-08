@@ -1,0 +1,70 @@
+---
+title: Hello World
+author: Jeremy Peach
+date: '2017-01-14'
+slug: ''
+excerpt: "first post on this blog site"
+categories: articles
+tags:
+  - sample-post
+  - R Markdown
+  - Jekyll
+comments: false
+share: true
+modified: 2018-02-05 22:50:50 -0500
+---
+
+So this is just your basic "hello world" post.  I'm testing my workflow for writing blog posts, which I hope will be...
+
+* write posts using R Markdown
+* knit to MD
+* commit to GitHub
+* host with github.io
+
+## R Markdown
+
+This post is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents.
+For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+With R Markdown, I can display and execute chunks of R code.
+
+```{r cars}
+summary(cars)
+```
+
+This greatly increases the reproducibility of the blog posts because the analysis code and the blog post are all in the same document.
+The code doesn't have to be copied from R and pasted into an HTML file.  That would make it possible (perhaps even *likely*) that my
+R code and results would get out of sync with the results I'm describing in the blog post.  By putting the code right in the blog post,
+the two will stay synched up.
+
+### Plots
+
+Not only can these blog posts show the output of R code, they can also show plots!
+
+```{r pressure}
+plot(pressure)
+```
+
+## knitr
+
+Using the [knitr](https://yihui.name/knitr/) package by Yihui Xie, the R Markdown post can be transformed to standard Jekyll markdown.
+I'm using a (slightly) modified version of the workflow process created by [Nicole White](https://nicolewhite.github.io/2015/02/07/r-blogging-with-rmarkdown-knitr-jekyll.html).
+I made some slight modifications to the `r2jekyll.R` that she developed.  Like everything else associated with the creation of this blog,
+you can find this file in my [GitHub repository](https://github.com/AnalyticJeremy/blog).
+
+## Jekyll
+The last component of the pipeline is [Jekyll](https://jekyllrb.com/), a Ruby bundle for creating a blog site from static files.  These
+files are shared on `github.io`.
+
+## UPDATE!  (2/4/2017)
+So I got all of this set up... learning to use Jekyll and getting R Markdown to play nice with it.  Then I learn that Yihui Xie has
+just released a new tool called [blogdown](https://github.com/rstudio/blogdown) that simplifies the process of converting R Markdown to
+a blog post.  However, his new tool is using [Hugo](https://gohugo.io/) as the static website engine.  Since I've already got all of this
+setup, I'm going to keep it.  But if anyone else out there wants to use R Markdown for blogging, I would definitely recommend that you
+check out blogdown instead of following my path.
+
+## UPDATE AGAIN! (2/5/2018)
+So here we are... one full year later.  I haven't done as much with this blog as I'd hoped, but I've recently been inspired
+to add some content.  A lot has changed in the past year... including a new laptop.  Since I have to create a new workflow
+for adding blog posts, I thought I should just go ahead and switch to [blogdown](https://github.com/rstudio/blogdown).  So
+that's happening now.

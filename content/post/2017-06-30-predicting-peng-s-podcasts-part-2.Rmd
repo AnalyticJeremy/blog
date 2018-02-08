@@ -1,0 +1,148 @@
+---
+title: Predicting Peng's Podcasts - Part 2
+author: Jeremy Peach
+date: '2017-06-30'
+slug: 2017-03-07-predicting-peng-2
+excerpt: "a follow-up on my forecast of Roger Peng's podcasting output"
+categories:
+  - articles
+tags:
+  - R
+  - forecasting
+  - Predicting Peng
+comments: false
+share: true
+css: "h1.entry-title {font-size: 4.1rem;}"
+---
+
+
+```{r get-rss-data, message=FALSE, include=FALSE}
+library(XML);
+library(dplyr);
+
+# a simple function for converting a list of lists to a data.frame
+list.entry.to.dataframe <- function(x) {
+  data.frame(as.list(x), stringsAsFactors = FALSE)
+}
+
+rss.to.dataframe <- function(url) {
+  # download the RSS data as XML and use XPath to extract "item" elements
+  xmlDocument <- xmlParse(url, encoding = "UTF-8");
+  rootNode <- xmlRoot(xmlDocument);
+  items <- xpathApply(rootNode, "//item");
+  data <- lapply(items, xmlSApply, xmlValue);
+  
+  # convert the XML list to a data.frame
+  df <- do.call(dplyr::bind_rows, lapply(data, list.entry.to.dataframe));
+
+  # if the data includes a "pubDate" column, convert that to a date
+  # and sort the output by that column
+  if (any(names(df) == "pubDate") == TRUE) {
+    df$pubDate <- as.POSIXct(df$pubDate, format = "%a, %d %b %Y %T %z");
+    df <- df[order(df$pubDate), ];
+  }
+  
+  # if there is a "duration" column, convert that to a difftime
+  if (any(names(df) == "duration") == TRUE) {
+    df$duration <- as.difftime(df$duration, format = "%T");
+  }
+
+  # add a column "n" that increments for each row
+  df <- cbind(n = 1:nrow(df), df)
+  
+  podcast <- xpathApply(rootNode, "channel/title", xmlValue);
+  df$podcast <- podcast[[1]];
+  
+  return(df);
+}
+
+nssd <- rss.to.dataframe("http://feeds.soundcloud.com/users/soundcloud:users:174789515/sounds.rss");
+effrep <- rss.to.dataframe("http://effortreport.libsyn.com/rss");
+```
+```{r data-cleaning, include=FALSE}
+# Data Cleaning
+# remove the first row from NSSD because it's not really counted as an episode
+nssd <- nssd[nssd$title != "Naming The Podcast", ];
+nssd$n <- nssd$n - 1;
+
+# For reproducibility in the future, make sure we remove any entries after the date this post was published
+previous.as.of.date <- as.POSIXct("2017-03-07 12:00:00");
+as.of.date <- as.POSIXct("2017-06-30 12:00:00");
+nssd <- nssd[nssd$pubDate < as.of.date, ];
+effrep <- effrep[effrep$pubDate < as.of.date, ];
+```
+```{r add-columns, include=FALSE}
+# select the columns we need and then union together the two data frames
+columns <- c("podcast", "n", "pubDate", "duration");
+episodes <- rbind(nssd[, columns], effrep[ , columns]);
+
+# add a column so we can identify the rows that were actually observed
+# (as opposed to the forecast values we will soon be adding)
+episodes$type <- "actual";
+```
+```{r compute-rate, include=FALSE}
+# Determine the rate at which podcast episodes are being released
+# first, make a simple data frame with the first and last episode of each podcast
+old.first.last <- episodes %>%
+                    filter(pubDate <= previous.as.of.date) %>%
+                    group_by(podcast) %>%
+                    summarize(first = min(pubDate), last = max(pubDate), count = max(n), group = "old") %>%
+                    arrange(first);
+new.first.last <- episodes %>%
+                    filter(pubDate <= as.of.date) %>%
+                    group_by(podcast) %>%
+                    summarize(first = min(pubDate), last = max(pubDate), count = max(n), group = "new") %>%
+                    arrange(first);
+first.last <- data.frame(rbind(old.first.last, new.first.last))
+
+# Compute how many days each podcast has been around and then compute a "days per episode" rate
+first.last$days <- with(first.last, as.numeric(last - first));
+first.last$rate <- with(first.last, days / (count - 1));
+```
+```{r find-crosspoint, echo=FALSE, message=FALSE}
+# a function that figures out when the first podcast surpasses the second
+find.intersection <- function(x) {
+  x[-1] <- lapply(x[-1], as.POSIXct, origin = "1970-01-01");
+  x[-1] <- lapply(x[-1], na.locf);
+  has.crossed <- x[2] >= x[3];
+  cross.episode <- min(x[has.crossed, 1]);
+  cross.index <- min(which(x[, 1] == cross.episode));
+  
+  x$is.cross.point <- FALSE;
+  x$is.cross.point[(cross.index - 2):(cross.index + 2)] <- TRUE;
+  
+  return(x)
+}
+
+library(reshape2);
+library(zoo);
+episode.dates <- dcast(episodes, n ~ podcast, value.var = "pubDate");
+cross.points <- find.intersection(episode.dates);
+
+# prepare for display
+cross.points[,2] <- as.Date(cross.points[,2]);
+cross.points[,3] <- as.Date(cross.points[,3]);
+cross.index <- min(which(cross.points$is.cross.point)) + 1;
+names(cross.points)[1] <- "Episode Number";
+```
+
+Back in February, I [wrote a post](../2017-03-07-predicting-peng-1) trying to predict when the output of Roger Peng's newer podcast
+("[The Effort Report](http://effortreport.libsyn.com/)") would surpass the output of his original podcast
+("[Not So Standard Deviations](http://www.nssdeviations.com/)").  Now that some time has passed, let's take a look back and see
+how well that prediction held up.
+
+In that previous post, I used a very simple linear rate of the output of the two podcasts to predict when the episode count
+of "The Effort Report" would surpass that of "NSSD".  This simple analysis predicted that Episode 39 of "The Effort Report"
+would be released on May 28th, which is five days sooner than "NSSD" would release its 39th episode.
+
+Perhaps spurred on by my blog post, Dr. Peng picked up the pace of production slightly.  Both podcasts released their 38th
+episodes on May 15th.  Then, on May 22nd, "The Effort Report" surpassed "NSSD" by posting its 39th episode.
+
+```{r, echo=FALSE, message=FALSE}
+library(knitr);
+kable(cross.points[cross.points$is.cross.point, 1:3], row.names = FALSE, align="c");
+```
+
+So my very simple model did pretty well.  It got the episode number correct, and it was only off on the date by six days.
+
+It looks like math works after all!

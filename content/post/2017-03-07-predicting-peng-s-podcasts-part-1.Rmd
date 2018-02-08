@@ -1,0 +1,256 @@
+---
+title: Predicting Peng's Podcasts - Part 1
+author: Jeremy Peach
+date: '2017-03-07'
+slug: 2017-03-07-predicting-peng-1
+excerpt: "forecasting Roger Peng's podcasting output"
+categories:
+  - articles
+tags:
+  - R
+  - forecasting
+  - Predicting Peng
+comments: false
+share: true
+css: "h1.entry-title {font-size: 4.1rem;}"
+image:
+  twitter: 2017-03-07-predicting-peng-1-plot-1.png
+---
+
+
+```{r get-rss-data, message=FALSE, include=FALSE}
+library(XML);
+library(dplyr);
+
+# a simple function for converting a list of lists to a data.frame
+list.entry.to.dataframe <- function(x) {
+  data.frame(as.list(x), stringsAsFactors = FALSE)
+}
+
+rss.to.dataframe <- function(url) {
+  # download the RSS data as XML and use XPath to extract "item" elements
+  xmlDocument <- xmlParse(url, encoding = "UTF-8");
+  rootNode <- xmlRoot(xmlDocument);
+  items <- xpathApply(rootNode, "//item");
+  data <- lapply(items, xmlSApply, xmlValue);
+  
+  # convert the XML list to a data.frame
+  df <- do.call(dplyr::bind_rows, lapply(data, list.entry.to.dataframe));
+
+  # if the data includes a "pubDate" column, convert that to a date
+  # and sort the output by that column
+  if (any(names(df) == "pubDate") == TRUE) {
+    df$pubDate <- as.POSIXct(df$pubDate, format = "%a, %d %b %Y %T %z");
+    df <- df[order(df$pubDate), ];
+  }
+  
+  # if there is a "duration" column, convert that to a difftime
+  if (any(names(df) == "duration") == TRUE) {
+    df$duration <- as.difftime(df$duration, format = "%T");
+  }
+
+  # add a column "n" that increments for each row
+  df <- cbind(n = 1:nrow(df), df)
+  
+  podcast <- xpathApply(rootNode, "channel/title", xmlValue);
+  df$podcast <- podcast[[1]];
+  
+  return(df);
+}
+
+nssd <- rss.to.dataframe("http://feeds.soundcloud.com/users/soundcloud:users:174789515/sounds.rss");
+effrep <- rss.to.dataframe("http://effortreport.libsyn.com/rss");
+```
+```{r data-cleaning, include=FALSE}
+# Data Cleaning
+# remove the first row from NSSD because it's not really counted as an episode
+nssd <- nssd[nssd$title != "Naming The Podcast", ];
+nssd$n <- nssd$n - 1;
+
+# For reproducibility in the future, make sure we remove any entries after the date this post was published
+as.of.date <- as.POSIXct("2017-03-07 12:00:00");
+nssd <- nssd[nssd$pubDate < as.of.date, ];
+effrep <- effrep[effrep$pubDate < as.of.date, ];
+```
+```{r add-columns, include=FALSE}
+# select the columns we need and then union together the two data frames
+columns <- c("podcast", "n", "pubDate", "duration");
+episodes <- rbind(nssd[, columns], effrep[ , columns]);
+
+# add a column so we can identify the rows that were actually observed
+# (as opposed to the forecast values we will soon be adding)
+episodes$type <- "actual";
+```
+```{r compute-rate, include=FALSE}
+# Determine the rate at which podcast episodes are being released
+# first, make a simple data frame with the first and last episode of each podcast
+first.last <- episodes %>%
+                group_by(podcast) %>%
+                summarize(first = min(pubDate), last = max(pubDate), count = max(n)) %>%
+                arrange(first);
+first.last <- data.frame(first.last);
+
+# Compute how many days each podcast has been around and then compute a "days per episode" rate
+first.last$days <- with(first.last, as.numeric(last - first));
+first.last$rate <- with(first.last, days / (count - 1));
+```
+```{r podcast-names, include=FALSE}
+nssd.name <- first.last$podcast[1];
+efrp.name <- first.last$podcast[2];
+```
+```{r include=FALSE}
+name <- nssd.name
+```
+
+Data science hero [Roger Peng](http://www.biostat.jhsph.edu/~rpeng/) is the co-host of two different podcasts.  For his
+first podcast, he joined [Hilary Parker](https://hilaryparker.com/about-hilary-parker/) on a data science podcast called
+"[`r name`](http://www.nssdeviations.com/)".  Their first episode was released on
+`r format(with(first.last, first[podcast == name]), "%B %e, %Y")`, and since then they have released a total
+of `r with(first.last, count[podcast == name])` episodes.  That works out to a rate of
+`r round(with(first.last, 1 / rate[podcast == name]), 3)` episodes per day.
+
+```{r include=FALSE}
+name <- efrp.name
+```
+But "`r nssd.name`" is not Dr. Peng's only venture in the podcasting world.  He has also teamed up with
+[Elizabeth Matsui](http://www.jhsph.edu/faculty/directory/profile/1876/elizabeth-c-matsui) to create 
+"[`r name`](http://effortreport.libsyn.com/)," a podcast covering life in academia.  The first episode debuted
+on `r format(with(first.last, first[podcast == name]), "%B %e, %Y")`.  Matsui and Peng have produced
+`r with(first.last, count[podcast == name])` episodes, which sets a pace of
+`r round(with(first.last, 1 / rate[podcast == name]), 3)` episodes per day.
+
+Even though "NSSD" had a `r with(first.last, floor(as.numeric(max(first) - min(first)) / 30))` month headstart,
+"`r efrp.name`" has been releasing episodes at a much faster rate.  We can expect that the number of episodes
+for "`r efrp.name`" will someday surpass that of "NSSD."  But when can we expect this momentous historic event
+to occur?  Just for fun, we'll devote a couple of blog posts to using some basic data science techniques to
+predict an answer to this burning question.
+
+## Getting Some Data
+To make a prediction, we'll need some data to tell us when the podcast episodes have been released.  Fortunately,
+this is easy to obtain from the podcasts' RSS feeds.  We can use R to download and process this data; we just need
+to make a quick function to download the feeds, parse the XML, and store it in a `data.frame`.  Below is a function
+I wrote called `rss.to.dataframe` to do the job:
+
+```{r get-rss-data-display, ref.label='get-rss-data', eval = FALSE}
+```
+
+We need to do just a little bit of cleaning on the data.  The first item in NSSD's RSS feed was a sort of teaser
+for the podcast and is not considered to be an official episode.  So I'll remove it from the `data.frame` and
+re-number the remaining rows so our episode counts will be correct.
+```{r data-cleaning-display, ref.label='data-cleaning', eval = FALSE}
+```
+
+Great!  Now we have two `data.frame` objects, one for each podcast.  To make our analysis easier, we can combine
+the two into one.  We can also take this as an opportunity to cut out some extraneous columns.
+```{r add-columns-display, ref.label='add-columns', eval = FALSE}
+```
+
+## Making a (Very Basic) Forecast
+When conducting a data analysis, I like to take a "start simple" approach.  This allows me to quickly study the
+data and produce some rough results before investing time in a more complex approach.  Here I'll implement that
+strategy by making a very basic assumption that both podcasts will continue releasing episodes at the same rate.
+Using this very simple model, we can predict the days on which upcoming episodes will be released.
+
+First, let's compute the rate at which the podcasts have been released.
+```{r compute-rate-display, ref.label='compute-rate', eval = FALSE}
+```
+
+Now let's extend that trend!  I'll pick an arbitrary future episode of the podcasts... let's say Episode #45.  
+Assuming that Dr. Peng produced podcast episodes at a steady rate, on what date should each of the 45 episodes
+theoretically have been released?
+```{r}
+# using each podcast's episode release rate, construct a data set with
+# the expected release date of the first 45 episodes
+projected <- merge(first.last, 1:45, all = TRUE);
+projected$pubDate <- with(projected, first + ((y - 1) * rate * 24 * 60 * 60));
+projected$n <- projected$y;
+projected$type <- "trend";
+projected$duration <- NA;
+```
+
+We now have a data frame called `projected` that has the thoretical release dates for 45 episodes of each podcast
+assuming that production had proceeded at a constant rate.
+
+## Answering the Big Question
+Now that we have a simple forecast of release dates for future episodes, we can look at those projected release
+dates to see when "`r efrp.name`" will surpass "`r nssd.name`".  Here's what we find:
+
+```{r, echo=FALSE, message=FALSE}
+# a function that figures out when the first podcast surpasses the second
+find.intersection <- function(x) {
+  x[-1] <- lapply(x[-1], as.POSIXct, origin = "1970-01-01");
+  x[-1] <- lapply(x[-1], na.locf);
+  has.crossed <- x[2] >= x[3];
+  cross.episode <- min(x[has.crossed, 1]);
+  cross.index <- min(which(x[, 1] == cross.episode));
+  
+  x$is.cross.point <- FALSE;
+  x$is.cross.point[(cross.index - 1):(cross.index + 1)] <- TRUE;
+  
+  return(x)
+}
+
+library(reshape2);
+library(zoo);
+episode.dates <- dcast(projected, n ~ podcast, value.var = "pubDate");
+cross.points <- find.intersection(episode.dates);
+
+# prepare for display
+cross.points[,2] <- as.Date(cross.points[,2]);
+cross.points[,3] <- as.Date(cross.points[,3]);
+cross.index <- min(which(cross.points$is.cross.point)) + 1;
+names(cross.points)[1] <- "Episode Number";
+
+
+library(knitr);
+kable(cross.points[cross.points$is.cross.point, 1:3], row.names = FALSE, align="c");
+```
+
+According to our simple linear forecast, episode #`r cross.points[cross.index, "Episode Number"]` of 
+"`r efrp.name`" will be released on `r format(cross.points[cross.index, 3], "%B %e, %Y")`.  That
+is `r as.numeric(cross.points[cross.index, 2] - cross.points[cross.index, 3])` days before "`r nssd.name`"
+will release its `r cross.points[cross.index, "Episode Number"]`th episode.  Thus we will consider
+this to be the "cross-over" point.
+
+> Output from "`r efrp.name`" will surpass "`r nssd.name`" on `r format(cross.points[cross.index, 3], "%B %e, %Y")`.
+
+## Visualizing the Forecast
+As usual, the easiest way to quickly understand the podcast output and our predicted release rate is to
+plot it out. This sounds like a job for `ggplot2`!
+
+Remember that we have two data frames, one with the actual episodes and one with our expected release dates based
+on our linear forecast.  To make our plot easier, we'll combine those two data frames into one.  We can also
+convert our strings to factors.
+
+```{r plot, echo = TRUE, fig.width=10}
+# combine our projected episode data with the actual episode data
+episodes <- rbind(episodes, projected[ , names(episodes)])
+
+# change data types to be better suited for plotting
+episodes$podcast <- factor(episodes$podcast)
+episodes$type <- factor(episodes$type)
+episodes$pubDate <- as.Date(episodes$pubDate)
+
+# We want to annotate our plot so make a nice label for that
+label.text <- paste("Episode", cross.points[cross.index, "Episode Number"], " - ", format(cross.points[cross.index, 3], "%B %e, %Y"));
+
+library(ggplot2);
+ggplot() +
+  geom_line(data = episodes, aes(x = as.Date(pubDate), y = n, color = podcast, linetype = type, size = type)) +
+  scale_size_manual(values = c(1.2, 0.5)) +
+  scale_x_date(date_labels = "%b %Y") +
+  labs(x = "", y = "Number of Episodes Released", title = "Podcast Output Forecast (using simple linear method)") +
+  geom_point(data = data.frame(x = cross.points[cross.index, 3], y = cross.points[cross.index, "Episode Number"]), aes(x = x, y = y), size=2, color="#00BFC4") +
+  annotate("text", x = as.Date("2017-02-25"), y = 43, hjust = 1, label = label.text, color="#00BFC4") +
+  annotate("segment", x = as.Date("2017-03-01"), xend = cross.points[cross.index, 3] - 9, y = 42.75, yend = cross.points[cross.index, "Episode Number"] + 0.25, color = "#00BFC4")
+```
+
+This plot allows us to easily see that the episodes have been released at a consistent rate, and it shows us when we can
+expect the two trendlines to converge.
+
+## Conclusion
+The plot reveals that overall Dr. Peng has been fairly consistent with his release schedule.  This gives us
+hope that our simple linear forecast could actually be accurate.  Check back next week; I'll be using the
+`forecast` package on this same data set to try to make a more advanced forecast.
+
+And keep your eye on those podcast RSS feeds.  We'll soon find out how accurate my forecasts really are!

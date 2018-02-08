@@ -1,0 +1,61 @@
+---
+title: Predicting Peng's Podcasts - Part 2
+author: Jeremy Peach
+date: '2017-06-30'
+slug: 2017-03-07-predicting-peng-2
+excerpt: "a follow-up on my forecast of Roger Peng's podcasting output"
+categories:
+  - articles
+tags:
+  - R
+  - forecasting
+  - Predicting Peng
+comments: false
+share: true
+css: "h1.entry-title {font-size: 4.1rem;}"
+---
+
+  <link rel="stylesheet" href="h1.entry-title {font-size: 4.1rem;}" type="text/css" />
+
+
+<p>Back in February, I <a href="../2017-03-07-predicting-peng-1">wrote a post</a> trying to predict when the output of Roger Peng’s newer podcast (“<a href="http://effortreport.libsyn.com/">The Effort Report</a>”) would surpass the output of his original podcast (“<a href="http://www.nssdeviations.com/">Not So Standard Deviations</a>”). Now that some time has passed, let’s take a look back and see how well that prediction held up.</p>
+<p>In that previous post, I used a very simple linear rate of the output of the two podcasts to predict when the episode count of “The Effort Report” would surpass that of “NSSD”. This simple analysis predicted that Episode 39 of “The Effort Report” would be released on May 28th, which is five days sooner than “NSSD” would release its 39th episode.</p>
+<p>Perhaps spurred on by my blog post, Dr. Peng picked up the pace of production slightly. Both podcasts released their 38th episodes on May 15th. Then, on May 22nd, “The Effort Report” surpassed “NSSD” by posting its 39th episode.</p>
+<table>
+<thead>
+<tr class="header">
+<th style="text-align: center;">Episode Number</th>
+<th style="text-align: center;">Not So Standard Deviations</th>
+<th style="text-align: center;">The Effort Report</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: center;">37</td>
+<td style="text-align: center;">2017-04-27</td>
+<td style="text-align: center;">2017-05-08</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">38</td>
+<td style="text-align: center;">2017-05-15</td>
+<td style="text-align: center;">2017-05-15</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">39</td>
+<td style="text-align: center;">2017-05-25</td>
+<td style="text-align: center;">2017-05-22</td>
+</tr>
+<tr class="even">
+<td style="text-align: center;">40</td>
+<td style="text-align: center;">2017-06-13</td>
+<td style="text-align: center;">2017-05-30</td>
+</tr>
+<tr class="odd">
+<td style="text-align: center;">41</td>
+<td style="text-align: center;">2017-06-22</td>
+<td style="text-align: center;">2017-06-05</td>
+</tr>
+</tbody>
+</table>
+<p>So my very simple model did pretty well. It got the episode number correct, and it was only off on the date by six days.</p>
+<p>It looks like math works after all!</p>

@@ -1,0 +1,61 @@
+---
+title: Hello World
+author: Jeremy Peach
+date: '2017-01-14'
+slug: ''
+excerpt: "first post on this blog site"
+categories: articles
+tags:
+  - sample-post
+  - R Markdown
+  - Jekyll
+comments: false
+share: true
+modified: 2018-02-05 22:50:50 -0500
+---
+
+
+
+<p>So this is just your basic “hello world” post. I’m testing my workflow for writing blog posts, which I hope will be…</p>
+<ul>
+<li>write posts using R Markdown</li>
+<li>knit to MD</li>
+<li>commit to GitHub</li>
+<li>host with github.io</li>
+</ul>
+<section id="r-markdown" class="level2">
+<h2>R Markdown</h2>
+<p>This post is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a>.</p>
+<p>With R Markdown, I can display and execute chunks of R code.</p>
+<pre class="r"><code>summary(cars)</code></pre>
+<pre><code>##      speed           dist       
+##  Min.   : 4.0   Min.   :  2.00  
+##  1st Qu.:12.0   1st Qu.: 26.00  
+##  Median :15.0   Median : 36.00  
+##  Mean   :15.4   Mean   : 42.98  
+##  3rd Qu.:19.0   3rd Qu.: 56.00  
+##  Max.   :25.0   Max.   :120.00</code></pre>
+<p>This greatly increases the reproducibility of the blog posts because the analysis code and the blog post are all in the same document. The code doesn’t have to be copied from R and pasted into an HTML file. That would make it possible (perhaps even <em>likely</em>) that my R code and results would get out of sync with the results I’m describing in the blog post. By putting the code right in the blog post, the two will stay synched up.</p>
+<section id="plots" class="level3">
+<h3>Plots</h3>
+<p>Not only can these blog posts show the output of R code, they can also show plots!</p>
+<pre class="r"><code>plot(pressure)</code></pre>
+<p><img src="/post/2017-01-14-hello-world_files/figure-html/pressure-1.png" width="672" /></p>
+</section>
+</section>
+<section id="knitr" class="level2">
+<h2>knitr</h2>
+<p>Using the <a href="https://yihui.name/knitr/">knitr</a> package by Yihui Xie, the R Markdown post can be transformed to standard Jekyll markdown. I’m using a (slightly) modified version of the workflow process created by <a href="https://nicolewhite.github.io/2015/02/07/r-blogging-with-rmarkdown-knitr-jekyll.html">Nicole White</a>. I made some slight modifications to the <code>r2jekyll.R</code> that she developed. Like everything else associated with the creation of this blog, you can find this file in my <a href="https://github.com/AnalyticJeremy/blog">GitHub repository</a>.</p>
+</section>
+<section id="jekyll" class="level2">
+<h2>Jekyll</h2>
+<p>The last component of the pipeline is <a href="https://jekyllrb.com/">Jekyll</a>, a Ruby bundle for creating a blog site from static files. These files are shared on <code>github.io</code>.</p>
+</section>
+<section id="update-242017" class="level2">
+<h2>UPDATE! (2/4/2017)</h2>
+<p>So I got all of this set up… learning to use Jekyll and getting R Markdown to play nice with it. Then I learn that Yihui Xie has just released a new tool called <a href="https://github.com/rstudio/blogdown">blogdown</a> that simplifies the process of converting R Markdown to a blog post. However, his new tool is using <a href="https://gohugo.io/">Hugo</a> as the static website engine. Since I’ve already got all of this setup, I’m going to keep it. But if anyone else out there wants to use R Markdown for blogging, I would definitely recommend that you check out blogdown instead of following my path.</p>
+</section>
+<section id="update-again-252018" class="level2">
+<h2>UPDATE AGAIN! (2/5/2018)</h2>
+<p>So here we are… one full year later. I haven’t done as much with this blog as I’d hoped, but I’ve recently been inspired to add some content. A lot has changed in the past year… including a new laptop. Since I have to create a new workflow for adding blog posts, I thought I should just go ahead and switch to <a href="https://github.com/rstudio/blogdown">blogdown</a>. So that’s happening now.</p>
+</section>
