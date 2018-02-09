@@ -41,3 +41,9 @@ That will launch a local web server and open the compiled site in a regular brow
 #### Authoring New Posts
 This part is *much* easier than under the old Jekyll system.  In RStudio, just open the R project for the blog, go to the "Add Ins" menu
 and select "New Post".  As you save it, the preview site will be automatically regenerated.
+
+#### Customizations
+ - Copied and tweaked "/themes/beautifulhugo/layouts/index.html" to "/layouts/posts/list.html" so I could have a separate index
+ page for listing all of the blog posts
+ - Modified "/themes/beautifulhugo/layouts/index.html" to make more of a general landing page for the site.  Made it two columns
+ and added my GitHub projects
