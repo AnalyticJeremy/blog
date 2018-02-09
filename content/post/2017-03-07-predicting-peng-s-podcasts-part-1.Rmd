@@ -13,8 +13,7 @@ tags:
 comments: false
 share: true
 css: "h1.entry-title {font-size: 4.1rem;}"
-image:
-  twitter: 2017-03-07-predicting-peng-1-plot-1.png
+image: /post/2017-03-07-predicting-peng-s-podcasts-part-1_files/figure-html/plot-1.png
 ---
 
 
