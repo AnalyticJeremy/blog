@@ -186,11 +186,12 @@ img {
   -moz-transition: opacity 0.5s ease-in-out;
   transition: opacity 0.5s ease-in-out;
   left: 50%;
-  width: 50px;
+  width: 75px;
   margin-top: -25px;
 }
 .navbar-custom .avatar-container  .avatar-img-border {
   width: 100%;
+  margin-left: -50%;
 }
 .navbar-custom .avatar-container  .avatar-img {
   width: 100%;
@@ -207,7 +208,7 @@ img {
 
 @media only screen and (min-width: 768px) {
   .navbar-custom .avatar-container {
-    width: 100px;
+    width: 150px;
     margin-top: -50px;
   }
 
@@ -525,7 +526,7 @@ footer .theme-by {
 }
 @media only screen and (min-width: 768px) {
   .intro-header {
-    margin-top: 160px;
+    margin-top: 200px;
   }
   .intro-header.big-img {
     margin-top: 91px;  /* Full navbar is small navbar + 20px padding on each side when expanded */
@@ -536,7 +537,7 @@ footer .theme-by {
   }
   .intro-header .page-heading h1,
   .intro-header .tags-heading h1 {
-    font-size: 80px;
+    font-size: 65px;
   }
   .intro-header .post-heading h1 {
     font-size: 50px;
