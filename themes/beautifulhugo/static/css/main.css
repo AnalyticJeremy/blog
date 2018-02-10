@@ -177,6 +177,10 @@ img {
   .navbar-custom.top-nav-short {
     padding: 0;
   }
+
+  .intro-header {
+    margin-top: 80px;
+  }
 }
 
 .navbar-custom .avatar-container {
@@ -342,6 +346,7 @@ footer .theme-by {
   font-size: 30px;
   margin-top: 0;
 }
+
 .post-preview .post-subtitle {
   margin: 0;
   font-weight: 300;
@@ -444,7 +449,7 @@ footer .theme-by {
 /* --- Post and page headers --- */
 
 .intro-header {
-  margin: 80px 0 20px;
+  margin: 120px 0 20px;
   position: relative;
 }
 .intro-header.big-img {
@@ -692,6 +697,7 @@ p.credits.theme-by > a > img {
   display: inline;
 }
 
+/* Customizations for Any Means Necessary */
 p code:not(.hljs), li code:not(.hljs) {
   margin: 0 2px;
   padding: 0 5px;
@@ -699,4 +705,102 @@ p code:not(.hljs), li code:not(.hljs) {
   background-color: #f2f2f2;
   border-radius: 3px;
   color: #222;
+}
+
+/* Make Bootstrap columns equal height */
+@media (min-width: 768px) {
+  .row.equal {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}
+
+div.row.front-page div.right-column > h2:first-of-type {
+  margin-top: 0pt;
+}
+
+div.row.front-page h2.section-head {
+  background-color: #f0f0f0;
+  padding: 3pt 6pt 3pt 2pt;
+}
+
+div.row.front-page h2.section-head > img {
+  height: 28px;
+  float: none;
+  display: inline;
+  margin: 0px 6px 4px 6px;
+}
+
+div.row.front-page .posts-list article:first-of-type {
+  padding-top: 6pt;
+}
+div.row.front-page .posts-list article {
+  padding-top: 28px;
+  padding-bottom: 28px;
+}
+div.row.front-page .post-title {
+  font-size: 20px;
+}
+@media only screen and (min-width: 768px) {
+  div.row.front-page .post-title {
+    font-size: 26px;
+  }
+}
+div.row.front-page .post-entry {
+  font-size: 15px;
+}
+
+div.front-page-left-sidebar {
+  padding-top: 24pt;
+  background-color: whitesmoke;
+  border-right: 1pt solid #eaeaea;
+  width: 100%;
+  margin-bottom: 24pt;
+  padding-bottom: 24pt;
+}
+div.front-page-left-sidebar img {
+  width: 10%;
+  display: inline;
+  margin: 0pt 12pt 0pt 12pt;
+}
+div.front-page-left-sidebar h2 {
+  font-size: 22px;
+  text-align: left;
+  width: 30pt;
+  display: inline;
+}
+div.front-page-left-sidebar a {
+  color: #404040;
+  text-decoration: none;
+}
+div.front-page-left-sidebar a:hover {
+  color: #0085a1;
+}
+div.front-page-left-sidebar div.sidebar-words {
+  padding: 2pt 12pt 2pt 12pt;
+  font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+}
+@media only screen and (min-width: 992px) {
+  div.front-page-left-sidebar {
+    max-width: 250px;
+    height: 100%;
+    margin-bottom: 0pt;
+  }
+  div.front-page-left-sidebar img {
+    display: block;
+    width: 80%;
+    margin: auto;
+  }
+  div.front-page-left-sidebar h2 {
+    font-size: 22px;
+    text-align: center;
+    width: 100%;
+    display: block;
+  }
+}
+@media only screen and (min-width: 1200px) {
+  div.front-page-left-sidebar div.sidebar-words {
+    font-size: 14pt;
+  }
 }
