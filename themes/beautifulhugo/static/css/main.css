@@ -804,3 +804,7 @@ div.front-page-left-sidebar div.sidebar-words {
     font-size: 14pt;
   }
 }
+
+pre.r {
+  padding: 0px;
+}
