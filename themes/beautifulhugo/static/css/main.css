@@ -808,3 +808,50 @@ div.front-page-left-sidebar div.sidebar-words {
 pre.r {
   padding: 0px;
 }
+
+/* super skinny view */
+@media only screen and (max-width: 550px) {
+  div.page-heading h1 {
+  }
+
+  .navbar-custom .avatar-container {
+    margin-top: -5px;
+  }
+
+  div.intro-header.no-img {
+    margin-top: 140px;
+  }
+
+  div.front-page-left-sidebar h2 {
+    font-size: 14px;
+  }
+
+  div.front-page-left-sidebar img {
+    margin: auto 2px auto 2px;    
+  }
+
+  div.front-page-left-sidebar div.sidebar-words {
+    font-size: 9pt;
+  }
+
+  h2.section-head {
+    font-size: 20px;
+  }
+
+  div.row.front-page .post-title {
+    font-size: 18px;
+  }
+  .post-preview .post-meta,
+  .post-heading .post-meta {
+    font-size: 14px;
+  }
+
+  body {
+    font-size: 12px;
+  }
+
+  pre code {
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
