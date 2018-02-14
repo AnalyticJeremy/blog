@@ -1,16 +1,13 @@
 ---
-title: About me
-subtitle: Why you'd want to go on a date with me
+title: About Me
+subtitle: Hi, I'm Jeremy!
 comments: false
 ---
 
-My name is Inigo Montoya. I have the following qualities:
+Hello!  My name is Jeremy Peach, and I'm a data scientist.  For my day job, I work as a Cloud Solution Architect at
+[Microsoft](https://microsoft.com) where I help customers with cloud-scale data science.
+In my spare time, I apply those same skills to satisfy my own personal curiosity.
 
-- I rock a great mustache
-- I'm extremely loyal to my family
-
-What else do you need?
-
-### my history
-
-To be honest, I'm having some trouble remembering right now, so why don't you just watch [my movie](http://en.wikipedia.org/wiki/The_Princess_Bride_%28film%29) and it will answer **all** your questions.
+This blog gives me a platform to share these personal data analyses with the rest of the world.  Most will be frivilous,
+but some may be serious.  They all reflect my desire to find some new insight in the data around us or to explore new
+data analysis techniques.
