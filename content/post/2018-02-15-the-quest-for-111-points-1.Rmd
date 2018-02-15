@@ -1,0 +1,136 @@
+---
+title: The Quest for 111 Points
+author: Jeremy Peach
+date: '2018-02-15'
+slug: the-quest-for-111-points-1
+categories:
+  - articles
+tags:
+  - stats
+  - hockey
+  - Nashville Predators
+comments: false
+share: true
+image: /post/2018-02-15-the-quest-for-111-points-1_files/figure-html/plot-1-1.png
+---
+
+```{r initialize-script, message=FALSE, include=FALSE}
+library(RCurl);
+library(XML);
+library(dplyr);
+library(jsonlite);
+library(scales);
+```
+```{r get-sports-club-data, message=FALSE, include=FALSE}
+#######################################################################################
+# Get Simulation Results from Sports Club Stats
+#######################################################################################
+
+
+url <- "http://www.sportsclubstats.com/NHL/Western/Central/Nashville.html"
+
+parsedHTML <- htmlParse(getURL(url));
+
+# extract data from the HTML table
+results.list <- xpathApply(parsedHTML, "//div[@id='whatIfTarget']/following-sibling::table[1]//tr[contains(@class, 'team')]", function(x) {
+
+  cbind(
+    xmlValue(x[[1]]),
+    xmlValue(x[[16]]),
+    xmlValue(x[[17]]),
+    xmlValue(x[[18]]),
+    xmlValue(x[[19]]),
+    xmlValue(x[[20]]),
+    xmlValue(x[[21]]),
+    xmlValue(x[[22]]),
+    xmlValue(x[[23]]),
+    xmlValue(x[[24]]),
+    xmlValue(x[[25]]),
+    xmlValue(x[[26]]),
+    xmlValue(x[[26]]),
+    xmlValue(x[[26]]),
+    xmlValue(x[[26]])
+  )
+});
+
+# covert our list of matrices to a data frame (and be sure to remove the NULL rows!)  
+results.df <- data.frame(do.call(rbind, results.list[!sapply(results.list, is.null)]), stringsAsFactors = FALSE);
+
+# identify the last column that has a number in it
+colIndices <- as.numeric();
+for (i in 1:nrow(results.df)) {
+  col <- max(which(!is.na( as.numeric(gsub(",", "", results.df[i,])) )))
+  colIndices <- c(colIndices, col)
+}
+
+# parse data and create new columns with the salient data points
+results.df$points <- as.numeric(results.df[,1])
+results.df$target <- colIndices
+
+results.df$countString <- sapply(seq_along(results.df[,1]), 
+                             function(x) results.df[x, colIndices[x]])
+
+results.df$count <- as.numeric(gsub(",", "", results.df[,"countString"]))
+
+# summarize the data and calculate desired values
+simSummary <- results.df[ , c("points", "count")]
+totalCount <- sum(simSummary$count)
+lastRowIndex <- min(which(results.df[,"points"] == 110)) - 1
+exceedCount <- sum(simSummary[1:lastRowIndex, ]$count)
+exceedProb <- exceedCount / totalCount
+exceedProb.20180215 <- 0.594219   #hard-coding the value derived as of Feb 15, 2018, because we can't get historical data
+                                  #from SportsClubStats.
+```
+```{r get-nhl-games-data, message=FALSE, include=FALSE}
+#######################################################################################
+# Get Game Results from NHL API
+#######################################################################################
+
+url <- "http://www.nhl.com/stats/rest/team?isAggregate=false&reportType=basic&isGame=true&reportName=teamsummary&cayenneExp=gameDate%3E=%222017-10-04%22%20and%20gameDate%3C=%222018-02-15%22%20and%20gameTypeId=2"
+results <- fromJSON(url)$data;
+results <- results %>% filter(teamAbbrev == "NSH") %>% arrange(gameDate);
+
+results$Game <- 1:nrow(results)
+results$Cumulative.Points <- cumsum(results$points)
+
+data <- results %>% select(Game, points, Cumulative.Points)
+data$Value <- "Points Acquired"
+data <- rbind(data, data.frame(Game = 1:82, points = 2, Cumulative.Points = 1:82 * (111 / 82), Value = "Pace for 111"))
+
+gp   <- sum(results$gamesPlayed)
+pts  <- sum(results$points)
+rate <- pts / (gp * 2)
+pace <- (82 * 2) * rate
+```
+
+The 2006-07 NHL season was the [Nashville Predators' best regular season](https://en.wikipedia.org/wiki/2006%E2%80%9307_Nashville_Predators_season).
+With [Tomáš Vokoun](https://en.wikipedia.org/wiki/Tom%C3%A1%C5%A1_Vokoun) in goal and great players like
+[Paul Kariya](https://en.wikipedia.org/wiki/Paul_Kariya),
+[Jason Arnott](https://en.wikipedia.org/wiki/Jason_Arnott),
+and [Steve Sullivan](https://en.wikipedia.org/wiki/Steve_Sullivan)
+up front, the team set a franchise record with 110 points.  Now, eleven years later, the Predators have a pretty good
+team once again.  Will this team finally be the one to surpass the '06-07 team and earn at least 111 points?
+
+So far this season, the Preds have played `r gp` games and earned `r pts` points.  This is `r percent(rate)` of the possible
+points and puts them on pace to accumulate `r round(pace, 1)` points in the full 82-game season.  That should give us some
+hope that this team could set a new record for points in a season.
+
+We can also use simulations to predict which outcomes are most likely.  Fortunately, we don't have to conduct our own
+simulations.  Instead, we can borrow data from the results of the nightly simulations conducted by
+[Sports Club Stats](http://www.sportsclubstats.com/NHL/Western/Central/Nashville.html).  Every night, they simulate the
+remainder of the NHL schedule over 1 billion times to estimate each team's chances of making the playoffs.  According
+to their results, the Preds have a `r percent(exceedProb.20180215)` chance of getting at least 111 points.  Again, this is
+quite encouraging!
+
+Let's conclude with a simple plot that shows the rate at which the team has acquired points and compare it to the pace
+they need to keep to hit 111.  Despite a slow start to the season and a brief slump during the holidays, the team has been
+acquiring points at a sufficient pace to finally break their franchise record.
+
+```{r plot-1, message=FALSE, echo=FALSE, fig.width=10}
+library(ggplot2);
+ggplot() +
+  geom_line(data = data, aes(x = Game, y = Cumulative.Points, color = Value, linetype = Value, size = Value)) +
+  scale_size_manual(values = c(0.75, 1.2)) +
+  scale_color_manual(values=c("#FFB81C", "#041E42")) +
+  labs(x = "Games Played", y = "Cumulative Points", title = "Nashville Predators - Quest for 111 Points (2018)")
+```
